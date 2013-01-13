@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="text/javascript">
+// Requesting
+var xmlRequest = new XMLHttpRequest();
+var requestSuccess = false;
+var requestTimeout = 0;
+
+// Status
+var is_gfire = false;
+var game_id = 0;
+var username = "";
+var nickname = "";
+var shortgamename = "";
+var longgamename = "";
+var popup = null;
+
+// Icon handling
+var button = null;
+var blink_timeout = 0;
+var blink_state = false;
+var last_state = 2;
+
+function swapStateIcon()
+{
+	if(blink_state)
+		button.icon = "icons/gfire_inactive.png";
+	else
+		button.icon = "icons/gfire_active.png";
+
+	blink_state = !blink_state;
+}
+
+function setStateIcon(active, enabled) {
+	if(!enabled) {
+		last_state = 2;
+		clearInterval(blink_timeout);
+		button.icon = "icons/gfire_inactive.png";
+		return;	
+	}
+
+	if(active) {
+		if(last_state != 0) {
+			last_state = 0;
+			clearInterval(blink_timeout);
+		}
+		if(game_id != 0)
+			button.icon = "http://media.xfire.com/xfire/xf/images/icons/" + shortgamename + ".gif";
+		else
+			button.icon = "icons/gfire_active.png";
+	} else if(!active && last_state != 1) {
+		last_state = 1;
+		blink_state = false;
+		button.icon = "icons/gfire_inactive.png";
+		blink_timeout = setInterval("swapStateIcon()", 1000);
+	}	
+}
+
+function toggleDetection()
+{
+	widget.preferences["enabled"] = (widget.preferences["enabled"] == "true") ? "false" : "true";
+
+	if(widget.preferences["enabled"] != "true")
+	{
+		setStateIcon(false, false);
+		xmlRequest.abort();
+		clearTimeout(requestTimeout);
+		resetStatus();
+	} else {
+		setStateIcon(false, true);
+		sendData();
+	}
+
+	if(popup)
+		popup.postMessage(updateStatus());
+}
+
+function updateStatus()
+{
+	var data = {status: true};
+
+	// Disabled?
+	data.enabled = (widget.preferences["enabled"] == "true");
+	if(!data.enabled)
+		return data;
+	
+	// No apps running, set the inactive icon
+	data.app = requestSuccess;
+	if(!requestSuccess)
+		return data;
+
+	// One app is running, set the active icon
+
+	data.gfire = is_gfire;
+	data.username = username;
+	data.nickname = nickname;
+	data.game_id = game_id;
+	if(game_id > 0)
+	{
+		data.shortgamename = shortgamename;
+		data.longgamename = longgamename;
+	}
+	return data;
+}
+
+function resetStatus()
+{
+	requestSuccess = false;
+	is_gfire = false;
+	game_id = 0;
+	username = "";
+	nickname = "";
+	shortgamename = "";
+	longgamename = "";
+}
+
+function requestTimedOut()
+{
+	setStateIcon(false, true);
+	resetStatus();
+}
+
+function requestStateChange()
+{
+	if(xmlRequest.readyState == 4 && xmlRequest.status == 200) {
+		requestSuccess = true;
+
+		// Disable document.onSuccess
+		var oldSuccess = document.onSuccess;
+		document.onSuccess = false;
+		eval(xmlRequest.responseText);
+		document.onSuccess = oldSuccess;
+
+		is_gfire = result["is_gfire"];
+		game_id = result["gameid"];
+		username = result["username"];
+		nickname = result["nickname"];
+		if(result["gamelongname"])
+			longgamename = result["gamelongname"];
+		else
+			longgamename = result["gamename"];
+		shortgamename = result["gameshortname"];
+
+		setStateIcon(true, true);
+
+		if(popup)
+			popup.postMessage(updateStatus());
+	}
+}
+
+function sendData()
+{
+	// Check whether the last request timed out
+	if(!requestSuccess)
+		requestTimedOut();
+	else
+		requestSuccess = false;
+
+	// We misuse the XMLHttpRequest object here to load the the script whenever we want
+	xmlRequest.abort();
+	try {
+		var tab = opera.extension.tabs.getFocused();
+		if(tab) {
+			xmlRequest.open("GET", "http://localhost:39123/url/?url=" + escape(tab.url), true);
+			xmlRequest.send(null);
+		}
+	} catch(e) {
+		opera.postError(e.message);
+	} finally {
+		requestTimeout = setTimeout("sendData()", 4000);
+	}
+	
+}
+
+window.addEventListener("load", function(){
+	opera.extension.onconnect = function(event) {
+		if(event.origin.indexOf("popup.html") != -1) {
+			popup = event.source;
+			popup.postMessage(updateStatus());
+		}
+	}
+	opera.extension.ondisconnect = function(event) {
+		if(event.origin.indexOf("popup.html") != -1) {
+			popup = null;
+		}
+	}
+	opera.extension.onmessage = function(event) {
+		if(event.data.toggle)
+			toggleDetection();
+	}
+
+	var UIItemProperties = {
+		disabled: false,
+		title: "Gfire WebGame Detection",
+		icon: "icons/gfire_active.png",
+		popup: {
+			href: "popup.html",
+			width: 250,
+			height: 200
+		}
+	}
+
+	button = opera.contexts.toolbar.createItem( UIItemProperties );
+	opera.contexts.toolbar.addItem( button );
+
+	// Initialize everything
+	resetStatus();
+
+	xmlRequest.onreadystatechange = requestStateChange;
+
+	// Start the refresh loop
+	if(widget.preferences["enabled"] == null)
+		widget.preferences["enabled"] = "true";
+
+	if(widget.preferences["enabled"] == "true") {
+		requestTimeout = setTimeout("sendData()", 4000);
+		setStateIcon(false, true);
+	} else
+		setStateIcon(false, false);
+}, false);
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

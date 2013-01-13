@@ -1,0 +1,115 @@
+<html>
+	<head>
+		<style>
+body {
+	font-family: helvetica, arial, verdana, sans-serif;
+	font-size: 12px;
+	overflow: hidden;
+	min-width: 250px;
+}
+
+a {
+	color: #0000FF;
+}
+
+a:visited {
+	color: #0000FF;
+}
+		</style>
+		<script type="text/javascript">
+/*function openSite(url) {
+	opera.extension.tabs.create({"url":url,"focused":true});
+}*/
+
+function update(data) {
+	// Disabled?
+	if(!data.enabled)
+	{
+		document.getElementById("gfweb-app").innerText = "Detection disabled";
+		document.getElementById("gfweb-acc-row").style.display = "none";
+		document.getElementById("gfweb-status-row").style.display = "none";
+		document.getElementById("gfweb-toggle").innerText = "Enable detection";
+
+		return;
+	}
+
+	document.getElementById("gfweb-toggle").innerText = "Disable detection";
+	
+	// No app's running
+	if(!data.app)
+	{
+		document.getElementById("gfweb-app").innerText = "None";
+		document.getElementById("gfweb-acc-row").style.display = "none";
+		document.getElementById("gfweb-status-row").style.display = "none";
+
+		return;
+	}
+
+	document.getElementById("gfweb-acc-row").style.display = "inline";
+	document.getElementById("gfweb-status-row").style.display = "inline";
+
+	// Our app is Gfire
+	if(data.gfire)
+		document.getElementById("gfweb-app").innerText = "Gfire";
+	else
+		document.getElementById("gfweb-app").innerText = "Xfire";
+
+	if(data.username && data.username.length > 0)
+	{
+		if(data.nickname && data.nickname.length > 0)
+			document.getElementById("gfweb-acc").innerHTML = data.nickname +
+				" (<a href=\"http://www.xfire.com/profile/" + data.username +
+				"\" target=\"_blank\">" + data.username + "</a>)";
+		else
+			document.getElementById("gfweb-acc").innerHTML =
+				"<a href=\"http://www.xfire.com/profile/" + data.username + "\" target=\"_blank\">" + data.username + "</a>";
+	}
+	else
+	{
+		document.getElementById("gfweb-acc").innerText = "Not logged in";
+	}
+
+	if(data.game_id > 0)
+	{
+		if(data.shortgamename && data.shortgamename.length > 0)
+			document.getElementById("gfweb-status").innerHTML = 
+				"<img src=\"http://media.xfire.com/xfire/xf/images/icons/" +
+				data.shortgamename +
+				".gif\" alt=\"\" />&nbsp;&nbsp;" + data.longgamename + "</a>";
+		else
+			document.getElementById("gfweb-status").innerText = data.longgamename;
+	}
+	else
+		document.getElementById("gfweb-status").innerText = "Not playing any game";
+}
+
+function toggleEnabled() {
+	opera.extension.postMessage({toggle: true});
+}
+
+window.addEventListener("load", function() {
+	opera.extension.onmessage = function(event) {
+		update(event.data);
+	}
+}, false);
+		</script>
+	</head>
+	<body>
+		<div>
+			<h3>Gfire WebGame Detection</h3>
+			<div>
+				<b>Xfire Client:&nbsp;&nbsp;</b><span id="gfweb-app"></span><br />
+				<span id="gfweb-acc-row"><b>Account:&nbsp;&nbsp;</b><span id="gfweb-acc"></span></span><br />
+				<span id="gfweb-status-row"><b>Status:&nbsp;&nbsp;</b><span id="gfweb-status"></span></span>
+			</div>
+			<hr />
+			<div>
+				<a href="#" onclick="toggleEnabled(); return false;" id="gfweb-toggle"></a>
+				<hr />
+				<a href="http://www.xfire.com" target="_blank">Xfire Website</a><br />
+				<a href="http://gfireproject.org" target="_blank">Gfire Website</a><br />
+				<a href="http://gfireproject.org/overview" target="_blank">About Gfire</a>
+			</div>
+		</div>
+	</body>
+</html>

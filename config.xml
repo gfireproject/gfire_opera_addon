@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" id="http://gfireproject.org" version="1.0" network="private">
+	<name xml:lang="en">Gfire WebGame Detection Extension</name>
+	<description xml:lang="en">Detects the games you play in Opera for Xfire and Gfire</description>
+	<author href="http://gfireproject.org/" email="support@gfireproject.org">Gfire Team</author>
+	<license href="http://www.opensource.org/licenses/gpl-3.0">Licensed under the GPL-3.0 license</license>
+	<icon src="icons/gfire_64.png"/>
+	<access origin="http://localhost:39123" />
+	<access origin="http://media.xfire.com" />
+	<preference name="enabled" value="true" />
+	<update-description href="http://gfireproject.org/files/gfire-webdetect-1.0.update.xml" />
+</widget>
